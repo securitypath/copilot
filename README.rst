@@ -34,10 +34,10 @@ evatutor
 ========
 
 
-    Add a short description here!
+    Add a chatbot into your webpage using Gradio
 
 
-A longer description of your project goes here...
+Create a custom chatbot and embedded into your WebPage.
 
 
 .. _pyscaffold-notes:
