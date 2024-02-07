@@ -71,4 +71,4 @@ document.addEventListener("selectionchange", () => {
     chatbot.like(vote, None, None)
 
 demo.queue()
-demo.launch()
+demo.launch(share=True)
