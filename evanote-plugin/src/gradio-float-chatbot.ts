@@ -24,75 +24,78 @@ export class GradioFloatChatbot extends LitElement {
 
     static styles = css`
       .chatbot-toggle {
-            display: -webkit-inline-box;
-    display: -webkit-inline-flex;
-    display: -ms-inline-flexbox;
-    display: inline-flex;
-    -webkit-align-items: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    -webkit-justify-content: center;
-    justify-content: center;
-    position: relative;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-    background-color: transparent;
-    outline: 0;
-    border: 0;
-    margin: 0;
-    border-radius: 0;
-    padding: 0;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    vertical-align: middle;
-    -moz-appearance: none;
-    -webkit-appearance: none;
-    -webkit-text-decoration: none;
-    text-decoration: none;
-    color: inherit;
-    font-weight: 400;
-    font-size: 1rem;
-    line-height: 1.5;
-    letter-spacing: 0.00938em;
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-pack: start;
-    -ms-flex-pack: start;
-    -webkit-justify-content: flex-start;
-    justify-content: flex-start;
-    -webkit-align-items: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    position: relative;
-    -webkit-text-decoration: none;
-    text-decoration: none;
-    min-height: 48px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    box-sizing: border-box;
-    white-space: nowrap;
-    padding-left: 16px;
-    padding-right: 16px;
+        display: -webkit-inline-box;
+        display: -webkit-inline-flex;
+        display: -ms-inline-flexbox;
+        display: inline-flex;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        position: relative;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        background-color: transparent;
+        outline: 0;
+        border: 0;
+        margin: 0;
+        border-radius: 0;
+        padding: 0;
+        cursor: pointer;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        vertical-align: middle;
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        -webkit-text-decoration: none;
+        text-decoration: none;
+        color: inherit;
+        font-weight: 400;
+        font-size: 1rem;
+        line-height: 1.5;
+        letter-spacing: 0.00938em;
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-pack: start;
+        -ms-flex-pack: start;
+        -webkit-justify-content: flex-start;
+        justify-content: flex-start;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        position: relative;
+        -webkit-text-decoration: none;
+        text-decoration: none;
+        min-height: 48px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        padding-left: 16px;
+        padding-right: 16px;
       }
-      
+
       ::slotted(.chatbot) {
         border: 0;
         position: fixed;
-        width: 30em;
-        height: 54em;
+        width: 25vw;
+        height: 100vh;
+        max-height: 100vh;
+        overflow-y: auto;
         top: 1.5em;
         z-index: 2;
         right: 0.1em;
       }
+
     `
 }
 
@@ -121,7 +124,7 @@ declare global {
 }
 
 export function mount() {
-    addElement("https://e8015202808bbbdcb4.gradio.live");
+    addElement("https://evatutor-space.sanchezcarlosjr.com/");
 }
 
 export function unmount() {
