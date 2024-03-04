@@ -8,12 +8,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "publish": "npm run build && x=$(sha1sum dist/gradio-float-chatbot.js | awk '{print $1}') && npx supabase  storage cp dist/gradio-float-chatbot.js  ss:///dependencies/evatutor/$x.js --experimental --content-type text/javascript; echo $x"
   },
   "dependencies": {
+    "@lit/react": "^1.0.3",
     "lit": "^3.1.0"
   },
   "devDependencies": {
+    "supabase": "^1.145.4",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.7.2"

@@ -27,7 +27,7 @@ def predict(history, choice, user_prompt, user_selection):
     for human, ai in history:
         history_langchain_format.append(HumanMessage(content=human))
         history_langchain_format.append(AIMessage(content=ai))
-    history = history + [[prompts[choice][1] + "\n Usuario: " + user_prompt + "\n Codigo/Pregunta: " + user_selection, ""]]
+    history = history + [[prompts[choice][1] + "\n Usuario: " + "" + "\n Codigo/Pregunta: " + user_selection, ""]]
     history_langchain_format.append(HumanMessage(content=history[-1][0]))
     gpt_response = llm(history_langchain_format)
     history[-1][1] = gpt_response.content
@@ -63,10 +63,10 @@ document.addEventListener("selectionchange", () => {
 
     user_selection = gr.Textbox(label="Tu duda es sobre:", visible=False, interactive=False, elem_id='evatutor_user_selection')
 
-    user_prompt = gr.Textbox(label="Tu mensaje:")
+    # user_prompt = gr.Textbox(label="Tu mensaje:")
 
-    btn = gr.Button(value="Preguntar")
-    btn.click(predict, inputs=[chatbot, choice, user_prompt, user_selection], outputs=[chatbot])
+    btn = gr.Button(value="Enviar")
+    btn.click(predict, inputs=[chatbot, choice, user_selection], outputs=[chatbot])
 
     chatbot.like(vote, None, None)
 
