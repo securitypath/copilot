@@ -1,4 +1,4 @@
-import 'https://gradio.s3-us-west-2.amazonaws.com/4.5.0/gradio.js';
+import 'https://gradio.s3-us-west-2.amazonaws.com/4.19.2/gradio.js';
 export function unmount() {
 
 }

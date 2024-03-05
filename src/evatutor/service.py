@@ -19,19 +19,19 @@ def load_json(path):
 
 prompts = load_json("./prompts.json")
 
-llm = ChatOpenAI(temperature=1.0, model='gpt-3.5-turbo-0613')
+llm = ChatOpenAI(temperature=1.0, model='gpt-4-turbo-preview')
 
 
-def predict(history, choice, user_prompt, user_selection):
+def predict(history, user_prompt, user_selection, system_prompt):
     history_langchain_format = []
     for human, ai in history:
         history_langchain_format.append(HumanMessage(content=human))
         history_langchain_format.append(AIMessage(content=ai))
-    history = history + [[prompts[choice][1] + "\n Usuario: " + "" + "\n Codigo/Pregunta: " + user_selection, ""]]
+    history = history + [["Sistema: "+prompts[system_prompt][2] + "\n Usuario: " + user_prompt + "\n Codigo/Pregunta seleccionados: " + user_selection, ""]]
     history_langchain_format.append(HumanMessage(content=history[-1][0]))
     gpt_response = llm(history_langchain_format)
     history[-1][1] = gpt_response.content
-    return history
+    return system_prompt, history
 
 
 def add_file(history, file):
@@ -56,19 +56,43 @@ document.addEventListener("selectionchange", () => {
   }
 });
 })""") as demo:
-    chatbot = gr.Chatbot([], elem_id="chatbot", bubble_full_width=True, show_label=False)
+    system_prompt = gr.State(0)
 
     choice = gr.Dropdown(list(map(lambda prompt: prompt[0], prompts)), type="index", label="Contexto del agente",
                          info="Busca el agente que mejor se adapte a tus dudas.")
 
-    user_selection = gr.Textbox(label="Tu duda es sobre:", visible=False, interactive=False, elem_id='evatutor_user_selection')
+    description = gr.Textbox(lines=2, visible=False, interactive=False, show_copy_button=True)
 
-    # user_prompt = gr.Textbox(label="Tu mensaje:")
 
-    btn = gr.Button(value="Enviar")
-    btn.click(predict, inputs=[chatbot, choice, user_selection], outputs=[chatbot])
+    def show_description(X):
+        return gr.Textbox(label="Descripción", value=prompts[X][1], lines=2, visible=True, interactive=False,
+                          show_copy_button=True)
 
+
+    choice.input(show_description, inputs=choice, outputs=description)
+
+    chatbot = gr.Chatbot(visible=False)
     chatbot.like(vote, None, None)
+    user_prompt = gr.Textbox(label="Tu mensaje:", visible=False)
+    chat = gr.Button(value="Enviar", visible=False)
+    user_selection = gr.Textbox(label="Tu duda es sobre:", visible=False, interactive=False,
+                                elem_id='evatutor_user_selection')
+
+    chat.click(predict, inputs=[chatbot, user_prompt, user_selection, system_prompt], outputs=[system_prompt, chatbot])
+    user_prompt.submit(predict, inputs=[chatbot, user_prompt, user_selection, system_prompt], outputs=[system_prompt, chatbot])
+
+    def confirm(prompt_choice, index):
+        return gr.Dropdown(visible=False), gr.Textbox(visible=False), gr.Chatbot([], elem_id="chatbot",
+                                                                                 bubble_full_width=True,
+                                                                                 show_label=False,
+                                                                                 visible=True), gr.Textbox(
+            label="Tu mensaje:", visible=True, interactive=True), gr.Button(value="Enviar", visible=True), gr.Button(
+            value="Confirmar", visible=False), prompt_choice
+
+
+    confirm_prompt = gr.Button(value="Confirmar prompt")
+    confirm_prompt.click(confirm, inputs=[choice, system_prompt],
+                         outputs=[choice, description, chatbot, user_prompt, chat, confirm_prompt, system_prompt])
 
 demo.queue()
-demo.launch(share=True)
+demo.launch(share=False)
