@@ -48,7 +48,7 @@ def vote(data: gr.LikeData):
 
 with gr.Blocks(title="Evatutor", css="footer{display:none !important} .chatbot {bottom: 12em!important;}", js="""(() => {
 document.addEventListener("selectionchange", () => {
-  const currentUserSelection = document.getSelection().toString();
+  const currentUserSelection = document.getSelection();
   if (currentUserSelection) {
   document.getElementById("evatutor_user_selection").children[0].children[1].value = currentUserSelection;
     document.getElementById("evatutor_user_selection").children[0].children[1]
@@ -59,7 +59,7 @@ document.addEventListener("selectionchange", () => {
     system_prompt = gr.State(0)
 
     choice = gr.Dropdown(list(map(lambda prompt: prompt[0], prompts)), type="index", label="Contexto del agente",
-                         info="Busca el agente que mejor se adapte a tus dudas.")
+                         info="Busca el agente que mejor se adapte a tus dudas.", value=0)
 
     description = gr.Textbox(lines=2, visible=False, interactive=False, show_copy_button=True)
 
@@ -82,7 +82,8 @@ document.addEventListener("selectionchange", () => {
     user_prompt.submit(predict, inputs=[chatbot, user_prompt, user_selection, system_prompt], outputs=[system_prompt, chatbot])
 
     def confirm(prompt_choice, index):
-        return gr.Dropdown(visible=False), gr.Textbox(visible=False), gr.Chatbot([], elem_id="chatbot",
+        print(prompt_choice)
+        return gr.Dropdown(choices=[], visible=False), gr.Textbox(visible=False), gr.Chatbot([], elem_id="chatbot",
                                                                                  bubble_full_width=True,
                                                                                  show_label=False,
                                                                                  visible=True), gr.Textbox(
