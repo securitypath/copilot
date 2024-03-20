@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@lit/react": "^1.0.3",
-    "lit": "^3.1.0"
+    "lit": "^3.1.0",
+    "react-hotjar": "^6.2.0"
   },
   "devDependencies": {
     "supabase": "^1.145.4",

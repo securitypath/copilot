@@ -1,6 +1,6 @@
 import json
 
-from gradio import Chatbot
+from gradio import Chatbot, Button
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 import gradio as gr
@@ -22,6 +22,7 @@ def load_json(path):
 prompts = load_json("./prompts.json")
 
 llm = ChatOpenAI(temperature=1.0, model='gpt-4-turbo-preview')
+llm.max_tokens = 100
 
 
 def predict(message, history, system_prompt, user_selection):
@@ -48,19 +49,12 @@ def vote(data: gr.LikeData):
         print("You downvoted this response: " + data.value)
 
 
-demo = gr.ChatInterface(
-        predict,
-        chatbot=Chatbot(
-                    label="EvaTutor",
-                    scale=1,
-                    show_label=False,
-                    latex_delimiters=[{
-                        "left": "$",
-                        "right": "$",
-                        "display": False
-                    }]
-                ),
-        css="footer{display:none !important}", js="""(() => {
+demo = gr.ChatInterface(predict, retry_btn=Button(value="🔄", variant="secondary", scale=0.1, min_width=1),
+    clear_btn=Button(value="🗑️", variant="secondary", scale=0.1, min_width=1),
+    undo_btn=Button(value="↩️️", variant="secondary", scale=0.1, min_width=1),
+    submit_btn="📨",
+    chatbot=Chatbot(label="EvaTutor", scale=1, show_label=False,
+        latex_delimiters=[{"left": "$", "right": "$", "display": False}]), css="footer{display:none !important}", js="""(() => {
        document.addEventListener("selectionchange", () => {
          const currentUserSelection = document.getSelection();
          if (currentUserSelection) {
@@ -69,15 +63,12 @@ demo = gr.ChatInterface(
                 .dispatchEvent(new Event('input', { detail: { value: currentUserSelection } }));
          }
        });
-       })""",
-        additional_inputs=[
-            gr.Dropdown(list(map(lambda prompt: prompt[0], prompts)), type="index",
-                                       label="¿Cómo quieres que EvaTutor se comparte?",
-                                       info="Busca el agente que mejor se adapte a tus dudas.", value=0),
-            gr.Textbox(label="Tu duda es sobre:", visible=False, interactive=False, elem_id='evatutor_user_selection')
-        ],
-        examples=[["¿Cómo empiezo?"], [ "Ayúdame a resolver el siguiente problema: "], ["¿Qué es lo que me pide el problema?"]]
-)
+       })""", additional_inputs=[gr.Dropdown(list(map(lambda prompt: prompt[0], prompts)), type="index",
+                                             label="¿Cómo quieres que EvaTutor se comparte?",
+                                             info="Busca el agente que mejor se adapte a tus dudas.", value=0, allow_custom_value=True),
+        gr.Textbox(label="Tu duda es sobre:", visible=False, interactive=False, elem_id='evatutor_user_selection')],
+    examples=[["¿Cómo empiezo?"], ["Ayúdame a resolver el siguiente problema: "],
+              ["¿Qué es lo que me pide el problema?"]])
 
 demo.queue()
 demo.launch(share=False)
