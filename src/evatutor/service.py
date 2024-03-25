@@ -44,7 +44,7 @@ class Evatutor:
             history_langchain_format.append(AIMessage(content=ai))
 
         history_langchain_format.append(SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM]))
-        history_langchain_format.append(HumanMessage(content=self.valid_user_message(message)))
+        history_langchain_format.append(HumanMessage(content=self.valid_user_message(message['text'])))
         history_langchain_format.append(HumanMessage(content="User selection: " + user_selection))
         partial_message = ""
         for chunk in self.llm.stream(history_langchain_format):
@@ -72,9 +72,17 @@ class Evatutor:
         return self.load_initial_message(system_prompt_id), [], None, self.prompts[system_prompt_id][Prompt.DESCRIPTION]
 
 
-evatutor = Evatutor(llm=ChatOpenAI(temperature=1.0, model='gpt-4-turbo-preview'), prompts=load_json("./prompts.json"))
+evatutor = Evatutor(llm=ChatOpenAI(temperature=0.6, model='gpt-4-turbo-preview'), prompts=load_json("./prompts.json"))
 
-with gr.Blocks(css="footer{display:none !important}", js="""(() => {
+with gr.Blocks(css="""
+footer{display:none !important}
+.dark  {
+    --body-background-fill: rgb(18, 18, 18);
+}
+.gradio-container {
+  border: 0 !important;
+}
+""", js="""(() => {
           document.addEventListener("selectionchange", () => {
             const currentUserSelection = document.getSelection();
             if (currentUserSelection) {
@@ -93,6 +101,7 @@ with gr.Blocks(css="footer{display:none !important}", js="""(() => {
                              render=False)
 
     chat_interface = gr.ChatInterface(evatutor.predict,
+                                      multimodal=True,
                                       retry_btn=Button(value="🔄", variant="secondary", scale=0.1, min_width=1,
                                                        render=False),
                                       clear_btn=Button(value="🗑️", variant="secondary", scale=0.1, min_width=1,
