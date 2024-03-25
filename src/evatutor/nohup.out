@@ -503,3 +503,5 @@ Traceback (most recent call last):
   File "/home/cest/.conda/envs/evatutor/lib/python3.8/site-packages/gradio/state_holder.py", line 46, in __getitem__
     block = self.blocks.blocks[key]
 KeyError: 751
+/home/cest/.conda/envs/evatutor/lib/python3.8/site-packages/gradio/components/base.py:188: UserWarning: 'scale' value should be an integer. Using 0.1 will cause issues.
+  warnings.warn(

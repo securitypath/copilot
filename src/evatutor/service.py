@@ -46,8 +46,10 @@ class Evatutor:
         history_langchain_format.append(SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM]))
         history_langchain_format.append(HumanMessage(content=self.valid_user_message(message)))
         history_langchain_format.append(HumanMessage(content="User selection: " + user_selection))
-        gpt_response = self.llm(history_langchain_format)
-        return gpt_response.content
+        partial_message = ""
+        for chunk in self.llm.stream(history_langchain_format):
+            partial_message += chunk.content
+            yield partial_message
 
     @staticmethod
     def add_file(history, file):
@@ -99,13 +101,14 @@ with gr.Blocks(css="footer{display:none !important}", js="""(() => {
                                                       render=False), submit_btn="📨",
                                       chatbot=gr.Chatbot(value=evatutor.load_initial_message(), label="EvaTutor",
                                                          scale=1, show_label=False, latex_delimiters=[
-                                              {"left": "$", "right": "$", "display": False}], render=False),
+                                              {"left": "$", "right": "$", "display": False},
+                                              {"left": "[", "right": "]", "display": False}
+                                          ], render=False),
                                       additional_inputs=[system_prompt_id, description,
                                                          gr.Textbox(label="Tu duda es sobre:", visible=False,
                                                                     interactive=False,
-                                                                    elem_id='evatutor_user_selection')],
-                                      examples=[["¿Cómo empiezo?"], ["Ayúdame a resolver el siguiente problema: "],
-                                                ["¿Qué es lo que me pide el problema?"]])
+                                                                    elem_id='evatutor_user_selection')]
+                                     )
 
     system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
                             [chat_interface.chatbot, chat_interface.chatbot_state, chat_interface.saved_input,
