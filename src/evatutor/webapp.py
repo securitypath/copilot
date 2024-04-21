@@ -4,6 +4,9 @@ import gradio as gr
 from gradio import Button
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
+import pathlib
+
+app_path = str(pathlib.Path(__file__).parent.resolve())
 
 
 def load_json(path):
@@ -12,11 +15,14 @@ def load_json(path):
 
 
 class DummyAI:
-    def __init__(self):
+    def __init__(self, temperature=0.6, model='gpt-4-turbo-preview'):
         self.content = "Yes"
 
     def __call__(self, *args, **kwargs):
         return self
+
+    def stream(self, x):
+        yield self
 
 
 class Prompt:
@@ -37,15 +43,14 @@ class Evatutor:
     def valid_user_message(message):
         return "" if message is None else message
 
-    def predict(self, message, history, system_prompt_id, user_selection, prompt_description):
+    def predict(self, message, history, system_prompt_id, prompt_description):
         history_langchain_format = []
         for human, ai in history:
             history_langchain_format.append(HumanMessage(content=self.valid_user_message(human)))
             history_langchain_format.append(AIMessage(content=ai))
-
         history_langchain_format.append(SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM]))
-        history_langchain_format.append(HumanMessage(content=self.valid_user_message(message['text'])))
-        history_langchain_format.append(HumanMessage(content="User selection: " + user_selection))
+        if message is not None:
+            history_langchain_format.append(HumanMessage(content=message))
         partial_message = ""
         for chunk in self.llm.stream(history_langchain_format):
             partial_message += chunk.content
@@ -72,7 +77,7 @@ class Evatutor:
         return self.load_initial_message(system_prompt_id), [], None, self.prompts[system_prompt_id][Prompt.DESCRIPTION]
 
 
-evatutor = Evatutor(llm=ChatOpenAI(temperature=0.6, model='gpt-4-turbo-preview'), prompts=load_json("./prompts.json"))
+evatutor = Evatutor(llm=ChatOpenAI(temperature=0.7, model='gpt-4-turbo-preview'), prompts=load_json(app_path+"/prompts.json"))
 
 with gr.Blocks(css="""
 footer{display:none !important}
@@ -83,15 +88,15 @@ footer{display:none !important}
   border: 0 !important;
 }
 """, js="""(() => {
-          document.addEventListener("selectionchange", () => {
-            const currentUserSelection = document.getSelection();
-            if (currentUserSelection) {
-            document.getElementById("evatutor_user_selection").children[0].children[1].value = currentUserSelection;
-              document.getElementById("evatutor_user_selection").children[0].children[1]
-                   .dispatchEvent(new Event('input', { detail: { value: currentUserSelection } }));
-            }
-          });
-          })""") as demo:
+     document.addEventListener('ai_explain', (event) => {
+            document.dispatchEvent(new CustomEvent(event.detail.id, {
+                detail: true
+            }));
+           document.getElementById("evatutor_user_prompt").getElementsByTagName('textarea')[0].value = event.detail.payload;
+           document.getElementById("evatutor_user_prompt").getElementsByTagName('textarea')[0].dispatchEvent(new Event('input'));
+           document.getElementById("evatutor_submit_button").click()
+    });  
+})""") as webapp:
     system_prompt_id = gr.Dropdown(evatutor.prompt_titles, type="index",
                                    label="¿Cómo quieres que EvaTutor se comparte?",
                                    info="Busca el agente que mejor se adapte a tus dudas.",
@@ -100,28 +105,35 @@ footer{display:none !important}
     description = gr.Textbox(value=evatutor.default_prompt_description, label="Descripción", interactive=False,
                              render=False)
 
+    prompt = gr.Textbox(
+        render=False,
+        show_label=False,
+        label="Message",
+        placeholder="Type a message...",
+        elem_id='evatutor_user_prompt',
+        scale=7,
+        autofocus=True,
+    )
+
     chat_interface = gr.ChatInterface(evatutor.predict,
-                                      multimodal=True,
-                                      retry_btn=Button(value="🔄", variant="secondary", scale=0.1, min_width=1,
+                                      textbox=prompt,
+                                      retry_btn=Button(value="🔄", variant="secondary", scale=1, min_width=1,
                                                        render=False),
-                                      clear_btn=Button(value="🗑️", variant="secondary", scale=0.1, min_width=1,
+                                      clear_btn=Button(value="🗑️", variant="secondary", scale=1, min_width=1,
                                                        render=False),
-                                      undo_btn=Button(value="↩️️", variant="secondary", scale=0.1, min_width=1,
-                                                      render=False), submit_btn="📨",
+                                      undo_btn=Button(value="↩️️", variant="secondary", scale=1, min_width=1,
+                                                      render=False),
+                                      submit_btn=Button(value="📨", variant="primary", scale=1, min_width=1,
+                                                        render=False, elem_id="evatutor_submit_button"),
                                       chatbot=gr.Chatbot(value=evatutor.load_initial_message(), label="EvaTutor",
                                                          scale=1, show_label=False, latex_delimiters=[
                                               {"left": "$", "right": "$", "display": False},
                                               {"left": "[", "right": "]", "display": False}
                                           ], render=False),
-                                      additional_inputs=[system_prompt_id, description,
-                                                         gr.Textbox(label="Tu duda es sobre:", visible=False,
-                                                                    interactive=False,
-                                                                    elem_id='evatutor_user_selection')]
-                                     )
+                                      additional_inputs=[system_prompt_id, description]
+                                      )
 
     system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
                             [chat_interface.chatbot, chat_interface.chatbot_state, chat_interface.saved_input,
                              description], queue=False, show_api=False)
 
-demo.queue()
-demo.launch(share=False)

@@ -30,7 +30,6 @@ from evatutor import __version__
 __author__ = "sanchezcarlosjr"
 __copyright__ = "sanchezcarlosjr"
 __license__ = "MIT"
-
 _logger = logging.getLogger(__name__)
 
 
@@ -39,6 +38,13 @@ _logger = logging.getLogger(__name__)
 # Python scripts/interactive interpreter, e.g. via
 # `from evatutor.skeleton import fib`,
 # when using this Python module as a library.
+
+
+def start_service():
+    _logger.info("Starting webapp..")
+    from evatutor.webapp import webapp
+    webapp.queue()
+    webapp.launch(share=False)
 
 
 
