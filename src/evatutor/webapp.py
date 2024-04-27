@@ -5,7 +5,7 @@ import time
 
 import gradio as gr
 from gradio import Button
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -55,7 +55,6 @@ class Evatutor:
     def predict(self, message, history, system_prompt_id, prompt_description=""):
         temp_system_prompt_id = 0 if system_prompt_id is None else system_prompt_id
         history_langchain_format = []
-        print(history, system_prompt_id)
         for human, ai in history:
             history_langchain_format.append(HumanMessage(content=self.valid_user_message(human)))
             history_langchain_format.append(AIMessage(content=self.valid_user_message(ai)))
