@@ -92,6 +92,7 @@ evatutor = Evatutor(llm=ChatOpenAI(temperature=0.7, model='gpt-4-turbo-preview')
                     prompts=load_json(app_path+'/prompts.json'))
 
 with gr.Blocks(css="""
+footer{display:none !important}
 .dark  {
     --body-background-fill: rgb(18, 18, 18);
 }
@@ -148,6 +149,3 @@ with gr.Blocks(css="""
     system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
                             [chat_interface.chatbot, chat_interface.chatbot_state, chat_interface.saved_input,
                              description], queue=False, show_api=False)
-
-webapp.queue(default_concurrency_limit=40)
-webapp.launch(share=False)
