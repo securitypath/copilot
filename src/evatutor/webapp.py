@@ -1,9 +1,16 @@
 import json
+import math
+import random
+import time
 
 import gradio as gr
 from gradio import Button
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_community.chat_models import ChatOpenAI
+from langchain_core.messages import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
 import pathlib
 
 app_path = str(pathlib.Path(__file__).parent.resolve())
@@ -22,7 +29,9 @@ class DummyAI:
         return self
 
     def stream(self, x):
-        yield self
+        for i in range(0, 1000):
+            self.content = random.choice(["apple", "banana", "cherry"])
+            yield self
 
 
 class Prompt:
@@ -43,12 +52,14 @@ class Evatutor:
     def valid_user_message(message):
         return "" if message is None else message
 
-    def predict(self, message, history, system_prompt_id, prompt_description):
+    def predict(self, message, history, system_prompt_id, prompt_description=""):
+        temp_system_prompt_id = 0 if system_prompt_id is None else system_prompt_id
         history_langchain_format = []
+        print(history, system_prompt_id)
         for human, ai in history:
             history_langchain_format.append(HumanMessage(content=self.valid_user_message(human)))
-            history_langchain_format.append(AIMessage(content=ai))
-        history_langchain_format.append(SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM]))
+            history_langchain_format.append(AIMessage(content=self.valid_user_message(ai)))
+        history_langchain_format.append(SystemMessage(content=self.prompts[temp_system_prompt_id][Prompt.PROMPT_SYSTEM]))
         if message is not None:
             history_langchain_format.append(HumanMessage(content=message))
         partial_message = ""
@@ -74,13 +85,13 @@ class Evatutor:
         return [[None, gpt_response.content]]
 
     def change_system_prompt(self, system_prompt_id=0):
-        return self.load_initial_message(system_prompt_id), [], None, self.prompts[system_prompt_id][Prompt.DESCRIPTION]
+        return self.load_initial_message(system_prompt_id), [], system_prompt_id, self.prompts[system_prompt_id][Prompt.DESCRIPTION]
 
 
-evatutor = Evatutor(llm=ChatOpenAI(temperature=0.7, model='gpt-4-turbo-preview'), prompts=load_json(app_path+"/prompts.json"))
+evatutor = Evatutor(llm=ChatOpenAI(temperature=0.7, model='gpt-4-turbo-preview'),
+                    prompts=load_json(app_path+'/prompts.json'))
 
 with gr.Blocks(css="""
-footer{display:none !important}
 .dark  {
     --body-background-fill: rgb(18, 18, 18);
 }
@@ -97,10 +108,10 @@ footer{display:none !important}
            document.getElementById("evatutor_submit_button").click()
     });  
 })""") as webapp:
-    system_prompt_id = gr.Dropdown(evatutor.prompt_titles, type="index",
+    system_prompt_id = gr.Dropdown(choices=evatutor.prompt_titles, type="index",
                                    label="¿Cómo quieres que EvaTutor se comparte?",
                                    info="Busca el agente que mejor se adapte a tus dudas.",
-                                   value=evatutor.default_prompt, allow_custom_value=True, render=False)
+                                   value=0, render=False)
 
     description = gr.Textbox(value=evatutor.default_prompt_description, label="Descripción", interactive=False,
                              render=False)
@@ -130,10 +141,13 @@ footer{display:none !important}
                                               {"left": "$", "right": "$", "display": False},
                                               {"left": "[", "right": "]", "display": False}
                                           ], render=False),
-                                      additional_inputs=[system_prompt_id, description]
+                                      additional_inputs=[system_prompt_id, description],
+                                      additional_inputs_accordion="Prompts"
                                       )
 
     system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
                             [chat_interface.chatbot, chat_interface.chatbot_state, chat_interface.saved_input,
                              description], queue=False, show_api=False)
 
+webapp.queue(default_concurrency_limit=40)
+webapp.launch(share=False)

@@ -43,7 +43,8 @@ _logger = logging.getLogger(__name__)
 def start_service():
     _logger.info("Starting webapp..")
     from evatutor.webapp import webapp
-    webapp.queue()
+    print("A")
+    webapp.queue(default_concurrency_limit=40)
     webapp.launch(share=False)
 
 

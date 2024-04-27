@@ -12,6 +12,7 @@ __pycache__/*
 .cache/*
 .*.swp
 */.ipynb_checkpoints/*
+node_modules
 .DS_Store
 
 # Project files
