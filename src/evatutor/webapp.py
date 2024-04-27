@@ -80,7 +80,7 @@ class Evatutor:
 
     def load_initial_message(self, system_prompt_id=0):
         history = [SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM])]
-        gpt_response = self.llm(history)
+        gpt_response = self.llm.invoke(history)
         return [[None, gpt_response.content]]
 
     def change_system_prompt(self, system_prompt_id=0):
@@ -111,7 +111,7 @@ footer{display:none !important}
     system_prompt_id = gr.Dropdown(choices=evatutor.prompt_titles, type="index",
                                    label="¿Cómo quieres que EvaTutor se comparte?",
                                    info="Busca el agente que mejor se adapte a tus dudas.",
-                                   value=0, render=False)
+                                   value=0, render=False, allow_custom_value=True)
 
     description = gr.Textbox(value=evatutor.default_prompt_description, label="Descripción", interactive=False,
                              render=False)
@@ -142,7 +142,8 @@ footer{display:none !important}
                                               {"left": "[", "right": "]", "display": False}
                                           ], render=False),
                                       additional_inputs=[system_prompt_id, description],
-                                      additional_inputs_accordion="Prompts"
+                                      additional_inputs_accordion="Prompts",
+                                      analytics_enabled=False
                                       )
 
     system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
