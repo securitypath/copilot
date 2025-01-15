@@ -1,96 +1,85 @@
-import json
-import math
-import random
-import time
-
+from fastapi import FastAPI, Request
 import gradio as gr
-from gradio import Button
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
+import time
+from supabase import create_client, Client, ClientOptions, AuthSessionMissingError
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
+
+
+
+app = FastAPI()
+supabase_url: str = os.environ.get("SUPABASE_URL")
+supabase_key: str = os.environ.get("SUPABASE_KEY")
+
+
+def get_user(request: Request):
+    authorization = request.headers.get("Authorization")
+    if authorization is None:
+        return False
+    supabase: Client = create_client(
+              supabase_url,
+              supabase_key,
+              ClientOptions(
+                  headers = {
+                    "Authorization": authorization
+                  },
+                  auto_refresh_token=False
+              )
+    )
+    token = authorization.replace("Bearer ", "")
+    return supabase.auth.set_session(token, "")
+
+
+model = ChatGoogleGenerativeAI(
+    model="gemini-1.5-pro",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2
 )
-import pathlib
 
-app_path = str(pathlib.Path(__file__).parent.resolve())
+system_message = """
+You are a highly knowledgeable Cybersecurity Expert with knowledge in SQL and Risk managment. Your primary goal is to assist CISOs and system administrators with their security-related inquiries. Please adhere to the following guidelines in your responses:
 
+1. **Expertise & Accuracy**: Provide correct, in-depth, and technically accurate solutions grounded in established cybersecurity principles, standards (such as NIST, ISO, CIS Controls), and best practices.
 
-def load_json(path):
-    with open(path) as file:
-        return json.load(file)
+2. **Clarity & Structure**: Present answers clearly and concisely. When appropriate, use bullet points, step-by-step instructions, code snippets, or configuration examples to make your guidance easy to follow.
 
+3. **Proactive Guidance**: If a question is ambiguous or lacks details, ask clarifying questions before offering a solution. If multiple solutions exist, highlight potential trade-offs and recommend best practices.
 
-class DummyAI:
-    def __init__(self, temperature=0.6, model='gpt-4-turbo-preview'):
-        self.content = "Yes"
+4. **References & Context**: Where applicable, include links or references to authoritative resources (e.g., official documentation, white papers) that can help the user dive deeper.
 
-    def __call__(self, *args, **kwargs):
-        return self
+5. **Respect Boundaries**: If a user’s question goes beyond your training or pertains to malicious or unethical use of cybersecurity tactics, politely decline or refocus the conversation on legitimate cybersecurity practices.
 
-    def stream(self, x):
-        for i in range(0, 1000):
-            self.content = random.choice(["apple", "banana", "cherry"])
-            yield self
+Your role is to provide expert cybersecurity support to help CISOs and sysadmins make informed decisions and solve their real-world security problems. 
 
+"""
 
-class Prompt:
-    TITLE = 0
-    DESCRIPTION = 1
-    PROMPT_SYSTEM = 2
-
-
-class Evatutor:
-    def __init__(self, llm, prompts):
-        self.llm = llm
-        self.prompts = prompts
-        self.default_prompt = 0
-        self.prompt_titles = list(map(lambda prompt: prompt[self.default_prompt], prompts))
-        self.default_prompt_description = self.prompts[self.default_prompt][Prompt.DESCRIPTION]
-
-    @staticmethod
-    def valid_user_message(message):
-        return "" if message is None else message
-
-    def predict(self, message, history, system_prompt_id, prompt_description=""):
-        temp_system_prompt_id = 0 if system_prompt_id is None else system_prompt_id
-        history_langchain_format = []
-        for human, ai in history:
-            history_langchain_format.append(HumanMessage(content=self.valid_user_message(human)))
-            history_langchain_format.append(AIMessage(content=self.valid_user_message(ai)))
-        history_langchain_format.append(SystemMessage(content=self.prompts[temp_system_prompt_id][Prompt.PROMPT_SYSTEM]))
-        if message is not None:
-            history_langchain_format.append(HumanMessage(content=message))
-        partial_message = ""
-        for chunk in self.llm.stream(history_langchain_format):
-            partial_message += chunk.content
-            yield partial_message
-
-    @staticmethod
-    def add_file(history, file):
-        history = history + [((file.name,), None)]
-        return history
-
-    @staticmethod
-    def vote(data):
-        if data.liked:
-            print("You upvoted this response: " + data.value)
-        else:
-            print("You downvoted this response: " + data.value)
-
-    def load_initial_message(self, system_prompt_id=0):
-        history = [SystemMessage(content=self.prompts[system_prompt_id][Prompt.PROMPT_SYSTEM])]
-        gpt_response = self.llm.invoke(history)
-        return [[None, gpt_response.content]]
-
-    def change_system_prompt(self, system_prompt_id=0):
-        return self.load_initial_message(system_prompt_id), [], system_prompt_id, self.prompts[system_prompt_id][Prompt.DESCRIPTION]
+def predict(message, history):
+    history_langchain_format = []
+    if len(history) == 0:
+        history_langchain_format.append(SystemMessage(content=system_message))
+    for msg in history:
+        if msg['role'] == "user":
+            history_langchain_format.append(HumanMessage(content=msg['content']))
+        elif msg['role'] == "assistant":
+            history_langchain_format.append(AIMessage(content=msg['content']))
+    history_langchain_format.append(HumanMessage(content=message))
+    gpt_response = model.invoke(history_langchain_format)
+    return gpt_response.content
 
 
-evatutor = Evatutor(llm=ChatOpenAI(temperature=0.7, model='gpt-4-turbo-preview'),
-                    prompts=load_json(app_path+'/prompts.json'))
 
-with gr.Blocks(css="""
+demo = gr.ChatInterface(
+    predict,
+    chatbot=gr.Chatbot(label=False),
+    type="messages",
+    editable=True,
+    save_history=True,
+    fill_width=True,
+    fill_height=True,
+    css="""
 footer{display:none !important}
 .dark  {
     --body-background-fill: rgb(18, 18, 18);
@@ -98,54 +87,12 @@ footer{display:none !important}
 .gradio-container {
   border: 0 !important;
 }
-""", js="""(() => {
-     document.addEventListener('ai_explain', (event) => {
-            document.dispatchEvent(new CustomEvent(event.detail.id, {
-                detail: true
-            }));
-           document.getElementById("evatutor_user_prompt").getElementsByTagName('textarea')[0].value = event.detail.payload;
-           document.getElementById("evatutor_user_prompt").getElementsByTagName('textarea')[0].dispatchEvent(new Event('input'));
-           document.getElementById("evatutor_submit_button").click()
-    });  
-})""") as webapp:
-    system_prompt_id = gr.Dropdown(choices=evatutor.prompt_titles, type="index",
-                                   label="¿Cómo quieres que EvaTutor se comparte?",
-                                   info="Busca el agente que mejor se adapte a tus dudas.",
-                                   value=0, render=False, allow_custom_value=True)
+    """
+)
 
-    description = gr.Textbox(value=evatutor.default_prompt_description, label="Descripción", interactive=False,
-                             render=False)
 
-    prompt = gr.Textbox(
-        render=False,
-        show_label=False,
-        label="Message",
-        placeholder="Type a message...",
-        elem_id='evatutor_user_prompt',
-        scale=7,
-        autofocus=True,
-    )
+app = gr.mount_gradio_app(app, demo, path="/", auth_dependency=get_user)
 
-    chat_interface = gr.ChatInterface(evatutor.predict,
-                                      textbox=prompt,
-                                      retry_btn=Button(value="🔄", variant="secondary", scale=1, min_width=1,
-                                                       render=False),
-                                      clear_btn=Button(value="🗑️", variant="secondary", scale=1, min_width=1,
-                                                       render=False),
-                                      undo_btn=Button(value="↩️️", variant="secondary", scale=1, min_width=1,
-                                                      render=False),
-                                      submit_btn=Button(value="📨", variant="primary", scale=1, min_width=1,
-                                                        render=False, elem_id="evatutor_submit_button"),
-                                      chatbot=gr.Chatbot(value=evatutor.load_initial_message(), label="EvaTutor",
-                                                         scale=1, show_label=False, latex_delimiters=[
-                                              {"left": "$", "right": "$", "display": False},
-                                              {"left": "[", "right": "]", "display": False}
-                                          ], render=False),
-                                      additional_inputs=[system_prompt_id, description],
-                                      additional_inputs_accordion="Prompts",
-                                      analytics_enabled=False
-                                      )
 
-    system_prompt_id.change(evatutor.change_system_prompt, system_prompt_id,
-                            [chat_interface.chatbot, chat_interface.chatbot_state, chat_interface.saved_input,
-                             description], queue=False, show_api=False)
+if __name__ == '__main__':
+    uvicorn.run(app)

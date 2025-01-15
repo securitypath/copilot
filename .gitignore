@@ -55,3 +55,6 @@ MANIFEST
 .python-version
 /gradio
 /.idea
+
+# 
+.env

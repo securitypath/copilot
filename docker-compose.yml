@@ -1,0 +1,16 @@
+services:
+  copilot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+       - SUPABASE_URL=${SUPABASE_URL}
+       - SUPABASE_KEY=${SUPABASE_KEY}
+       - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN}
+       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    networks:
+      - vulnertrack-reverse-proxy_default
+
+networks:
+  vulnertrack-reverse-proxy_default:
+    external: true
